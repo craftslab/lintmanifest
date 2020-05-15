@@ -7,7 +7,7 @@
            remote="aosp"
            sync-j="4" />
   <manifest-server url="http://android-smartsync.corp.google.com/android.googlesource.com/manifestserver" />
-  <project groups="pdk" name="platform/build" path="build/make" revision="8140bb1dc7cf8f39f4855f194bfbe9c4732e7e53", upstream="master" />
+  <project groups="pdk" name="platform/build" path="build/make" revision="8140bb1dc7cf8f39f4855f194bfbe9c4732e7e53" upstream="master" />
   <project groups="pdk,tradefed" name="platform/build/blueprint" path="build/blueprint" revision="6f902c4134e52c635977821900e439c7b9b0675c" upstream="master" />
   <project groups="pdk,tradefed" name="platform/build/soong" path="build/soong" revision="8cf3e5471db04da274965a8e5c0dc3d465f08c5f" upstream="master" />
 </manifest>

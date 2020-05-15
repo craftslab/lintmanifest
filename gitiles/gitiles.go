@@ -24,9 +24,9 @@ type Gitiles struct {
 
 func (g *Gitiles) Query(url, user, pass, project, revision string) ([]byte, error) {
 	if user != "" && pass != "" {
-		url = url + "/a/plugins/gitiles/" + project + "/+/" + revision
+		url = url + "/a/" + project + "/+/" + revision
 	} else {
-		url = url + "/plugins/gitiles/" + project + "/+/" + revision
+		url = url + "/" + project + "/+/" + revision
 	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
