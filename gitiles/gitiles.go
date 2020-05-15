@@ -23,19 +23,29 @@ type Gitiles struct {
 }
 
 func (g *Gitiles) Query(url, user, pass, project, revision string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url+"/a/plugins/gitiles/"+project+"/+/"+revision, nil)
+	if user != "" && pass != "" {
+		url = url + "/a/plugins/gitiles/" + project + "/+/" + revision
+	} else {
+		url = url + "/plugins/gitiles/" + project + "/+/" + revision
+	}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
 
-	req.SetBasicAuth(user, pass)
+	if user != "" && pass != "" {
+		req.SetBasicAuth(user, pass)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "client failed")
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("client failed")
