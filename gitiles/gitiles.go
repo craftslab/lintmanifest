@@ -23,13 +23,7 @@ type Gitiles struct {
 }
 
 func (g *Gitiles) Query(url, user, pass, project, revision string) ([]byte, error) {
-	if user != "" && pass != "" {
-		url = url + "/a/" + project + "/+/" + revision
-	} else {
-		url = url + "/" + project + "/+/" + revision
-	}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url+"/"+project+"/+/"+revision, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
