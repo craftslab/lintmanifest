@@ -25,5 +25,5 @@ matrix:
         - cd $TRAVIS_BUILD_DIR/
         - golangci-lint run
         - $GOPATH/bin/goveralls -service=travis-ci
-        - CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/gorepo main.go
-        - CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -ldflags="-s -w" -o bin/gorepo.exe main.go
+        - CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/lintmanifest main.go
+        - CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -ldflags="-s -w" -o bin/lintmanifest.exe main.go
