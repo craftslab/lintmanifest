@@ -29,18 +29,19 @@
 ## Usage
 
 ```bash
-usage: lintmanifest --manifest-file=MANIFEST-FILE --gitiles-url=GITILES-URL --lint-out=LINT-OUT [<flags>]
+usage: lintmanifest --gitiles-url=GITILES-URL --lint-out=LINT-OUT --manifest-file=MANIFEST-FILE [<flags>]
 
 Lint Manifest
 
 Flags:
   --help                         Show context-sensitive help (also try --help-long and --help-man).
   --version                      Show application version.
-  --manifest-file=MANIFEST-FILE  Manifest file
   --gitiles-pass=GITILES-PASS    Gitiles password
   --gitiles-url=GITILES-URL      Gitiles location
   --gitiles-user=GITILES-USER    Gitiles username
+  --lint-mode="sync"             Lint mode (async|sync)
   --lint-out=LINT-OUT            Lint output
+  --manifest-file=MANIFEST-FILE  Manifest file
 ```
 
 
