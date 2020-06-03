@@ -16,7 +16,7 @@ import (
 	"testing"
 )
 
-func TestLint(t *testing.T) {
+func TestLintAsync(t *testing.T) {
 	projects := make([]interface{}, 1)
 
 	projects[0] = map[string]interface{}{
@@ -27,7 +27,23 @@ func TestLint(t *testing.T) {
 		"-upstream": "master",
 	}
 
-	if _, err := Lint(projects); err != nil {
+	if _, err := LintAsync(projects); err != nil {
+		t.Error("FAIL:", err)
+	}
+}
+
+func TestLintSync(t *testing.T) {
+	projects := make([]interface{}, 1)
+
+	projects[0] = map[string]interface{}{
+		"-groups":   "pdk,tradefed",
+		"-name":     "platform/build/soong",
+		"-path":     "build/soong",
+		"-revision": "8cf3e5471db04da274965a8e5c0dc3d465f08c5f",
+		"-upstream": "master",
+	}
+
+	if _, err := LintSync(projects); err != nil {
 		t.Error("FAIL:", err)
 	}
 }

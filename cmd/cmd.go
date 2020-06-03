@@ -28,14 +28,17 @@ import (
 
 var (
 	app  = kingpin.New("lintmanifest", "Lint Manifest").Author(Author).Version(Version)
-	file = app.Flag("manifest-file", "Manifest file").Required().String()
 	pass = app.Flag("gitiles-pass", "Gitiles password").String()
 	url  = app.Flag("gitiles-url", "Gitiles location").Required().String()
 	user = app.Flag("gitiles-user", "Gitiles username").String()
+	mode = app.Flag("lint-mode", "Lint mode (async|sync)").Default("sync").String()
 	out  = app.Flag("lint-out", "Lint output").Required().String()
+	file = app.Flag("manifest-file", "Manifest file").Required().String()
 )
 
 func Run() {
+	var result []interface{}
+
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	m := manifest.Manifest{}
@@ -51,7 +54,14 @@ func Run() {
 
 	log.Println("lint running...")
 
-	result, err := Lint(projects)
+	if *mode == "async" {
+		result, err = LintAsync(projects)
+	} else if *mode == "sync" {
+		result, err = LintSync(projects)
+	} else {
+		log.Fatal("mode invalid")
+	}
+
 	if err != nil {
 		log.Fatal("lint failed: ", err.Error())
 	}
@@ -63,12 +73,24 @@ func Run() {
 	log.Println("lint completed.")
 }
 
-func Lint(projects []interface{}) ([]interface{}, error) {
+func LintAsync(projects []interface{}) ([]interface{}, error) {
 	result, err := runtime.Run(Routine, projects)
 	if err != nil {
 		return nil, errors.Wrap(err, "run failed")
 	}
 
+	return result, nil
+}
+
+func LintSync(projects []interface{}) ([]interface{}, error) {
+	var result []interface{}
+
+	for _, val := range projects {
+		buf := Routine(val)
+		if buf != nil {
+			result = append(result, buf)
+		}
+	}
 	return result, nil
 }
 
@@ -101,11 +123,11 @@ func Routine(project interface{}) interface{} {
 }
 
 func Write(data []interface{}) error {
+	var buf []string
+
 	if _, err := os.Stat(*out); err == nil {
 		return errors.New("file alread exist")
 	}
-
-	var buf []string
 
 	for _, val := range data {
 		if val != nil && val.(string) != "" {
