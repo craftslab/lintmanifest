@@ -1,6 +1,6 @@
 #!/bin/bash
 
-list="cmd,gitiles,manifest,runtime"
+list="cmd,gitiles,manifest,runtime,writer"
 
 go env -w GOPROXY=https://goproxy.cn,direct
 

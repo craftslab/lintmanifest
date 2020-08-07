@@ -16,7 +16,9 @@
 
 ## Features
 
-- Support to lint revision in Android Manifest.
+- Support to lint revision in branch of repository.
+
+- Support to lint revision as HEAD in branch of repository.
 
 
 
@@ -29,18 +31,19 @@
 ## Usage
 
 ```bash
-usage: lintmanifest --gitiles-url=GITILES-URL --lint-out=LINT-OUT --manifest-file=MANIFEST-FILE [<flags>]
+usage: lintmanifest --gitiles-url=GITILES-URL --manifest-file=MANIFEST-FILE [<flags>]
 
 Lint Manifest
 
 Flags:
-  --help                         Show context-sensitive help (also try --help-long and --help-man).
+  --help                         Show context-sensitive help (also try
+                                 --help-long and --help-man).
   --version                      Show application version.
   --gitiles-pass=GITILES-PASS    Gitiles password
   --gitiles-url=GITILES-URL      Gitiles location
   --gitiles-user=GITILES-USER    Gitiles username
   --lint-mode="sync"             Lint mode (async|sync)
-  --lint-out=LINT-OUT            Lint output
+  --lint-out="out.txt"           Lint output (.json|.txt|.xlsx)
   --manifest-file=MANIFEST-FILE  Manifest file
 ```
 
@@ -49,7 +52,50 @@ Flags:
 ## Run
 
 ```bash
-./lintmanifest --manifest-file=manifest.xml --gitiles-url=localhost:80 --lint-out=out.txt
+./lintmanifest --gitiles-url=localhost:80 --manifest-file=manifest.xml
+```
+
+
+
+## Output
+
+### JSON Format
+
+```json
+{
+  "lintmanifest": [
+    {
+      "branch": "NAME",
+      "commit": "HASH",
+      "details": "DETAILS",
+      "repo": "NAME",
+      "type": "ERROR"
+    },
+    {
+      "branch": "NAME",
+      "commit": "HASH",
+      "details": "DETAILS",
+      "repo": "NAME",
+      "type": "WARN"
+    }
+  ]
+}
+```
+
+
+
+### TXT Format
+
+```txt
+TYPE,REPO,BRANCH,COMMIT,DETAILS
+```
+
+
+
+### XLSX Format
+
+```
+TYPE,REPO,BRANCH,COMMIT,DETAILS
 ```
 
 

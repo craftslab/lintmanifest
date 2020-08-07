@@ -13,6 +13,7 @@
 package gitiles
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
@@ -22,8 +23,58 @@ import (
 type Gitiles struct {
 }
 
+func (g *Gitiles) Head(url, user, pass, project, branch string) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, url+"/"+project+"/+log/refs/heads/"+branch+"?format=JSON", nil)
+	if err != nil {
+		return "", errors.Wrap(err, "request failed")
+	}
+
+	if user != "" && pass != "" {
+		req.SetBasicAuth(user, pass)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "client failed")
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("client failed")
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "read failed")
+	}
+
+	buf := map[string]interface{}{}
+
+	if err := json.Unmarshal(data[4:], &buf); err != nil {
+		return "", errors.Wrap(err, "unmarshal failed")
+	}
+
+	if _, ok := buf["log"]; !ok {
+		return "", errors.New("log invalid")
+	}
+
+	b := buf["log"].([]interface{})
+	if len(b) == 0 {
+		return "", errors.New("list invalid")
+	}
+
+	if _, ok := b[0].(map[string]interface{})["commit"]; !ok {
+		return "", errors.New("commit invalid")
+	}
+
+	return b[0].(map[string]interface{})["commit"].(string), nil
+}
+
 func (g *Gitiles) Query(url, user, pass, project, revision string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url+"/"+project+"/+/"+revision, nil)
+	req, err := http.NewRequest(http.MethodGet, url+"/"+project+"/+/"+revision+"?format=JSON", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
@@ -47,7 +98,7 @@ func (g *Gitiles) Query(url, user, pass, project, revision string) ([]byte, erro
 
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.New("read failed")
+		return nil, errors.Wrap(err, "read failed")
 	}
 
 	return buf, nil

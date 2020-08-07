@@ -13,10 +13,8 @@
 package cmd
 
 import (
-	"bufio"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -24,6 +22,7 @@ import (
 	"lintmanifest/gitiles"
 	"lintmanifest/manifest"
 	"lintmanifest/runtime"
+	"lintmanifest/writer"
 )
 
 var (
@@ -32,7 +31,7 @@ var (
 	url  = app.Flag("gitiles-url", "Gitiles location").Required().String()
 	user = app.Flag("gitiles-user", "Gitiles username").String()
 	mode = app.Flag("lint-mode", "Lint mode (async|sync)").Default("sync").String()
-	out  = app.Flag("lint-out", "Lint output").Required().String()
+	out  = app.Flag("lint-out", "Lint output (.json|.txt|.xlsx)").Default("out.txt").String()
 	file = app.Flag("manifest-file", "Manifest file").Required().String()
 )
 
@@ -40,6 +39,10 @@ func Run() {
 	var result []interface{}
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	if _, err := os.Stat(*out); err == nil {
+		log.Fatal("file exist: ", *out)
+	}
 
 	m := manifest.Manifest{}
 
@@ -56,18 +59,30 @@ func Run() {
 
 	if *mode == "async" {
 		result, err = LintAsync(projects)
+		if err != nil {
+			log.Fatal("async failed: ", err.Error())
+		}
 	} else if *mode == "sync" {
 		result, err = LintSync(projects)
+		if err != nil {
+			log.Fatal("sync failed: ", err.Error())
+		}
 	} else {
 		log.Fatal("mode invalid")
 	}
 
-	if err != nil {
-		log.Fatal("lint failed: ", err.Error())
+	if len(result) != 0 {
+		log.Println("error/warning found!")
+	} else {
+		log.Println("no error/warning.")
+		log.Println("lint completed.")
+		return
 	}
 
-	if err := Write(result); err != nil {
-		log.Fatal("write failed: ", err.Error())
+	w := writer.Writer{}
+
+	if err := w.Run(result, *out); err != nil {
+		log.Fatal("run failed: ", err.Error())
 	}
 
 	log.Println("lint completed.")
@@ -91,63 +106,55 @@ func LintSync(projects []interface{}) ([]interface{}, error) {
 			result = append(result, buf)
 		}
 	}
+
 	return result, nil
 }
 
 func Routine(project interface{}) interface{} {
+	p := project.(map[string]interface{})
+
+	name, ok := p["-name"]
+	if !ok {
+		return nil
+	}
+
+	revision, ok := p["-revision"]
+	if !ok {
+		return nil
+	}
+
+	upstream, ok := p["-upstream"]
+	if !ok {
+		return nil
+	}
+
+	buf := make(map[string]string)
+
+	buf["branch"] = upstream.(string)
+	buf["commit"] = revision.(string)
+	buf["details"] = ""
+	buf["repo"] = name.(string)
+	buf["type"] = ""
+
 	g := gitiles.Gitiles{}
 
-	buf := project.(map[string]interface{})
+	_, err := g.Query(*url, *user, *pass, buf["repo"], buf["commit"])
+	if err != nil {
+		buf["details"] = "Commit is invalid in branch of repo."
+		buf["type"] = "ERROR"
+		return buf
+	}
 
-	name, ok := buf["-name"]
-	if !ok {
+	head, err := g.Head(*url, *user, *pass, buf["repo"], buf["branch"])
+	if err != nil {
 		return nil
 	}
 
-	path, ok := buf["-path"]
-	if !ok {
-		path = name
+	if buf["commit"] != head {
+		buf["details"] = "Commit is not the head in branch of repo."
+		buf["type"] = "WARN"
+		return buf
 	}
-
-	revision, ok := buf["-revision"]
-	if !ok {
-		return nil
-	}
-
-	_, err := g.Query(*url, *user, *pass, name.(string), revision.(string))
-	if err != nil {
-		return path
-	}
-
-	return nil
-}
-
-func Write(data []interface{}) error {
-	var buf []string
-
-	if _, err := os.Stat(*out); err == nil {
-		return errors.New("file alread exist")
-	}
-
-	for _, val := range data {
-		if val != nil && val.(string) != "" {
-			buf = append(buf, val.(string))
-		}
-	}
-
-	f, err := os.Create(*out)
-	if err != nil {
-		return errors.Wrap(err, "create failed")
-	}
-
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	if _, err := w.WriteString(strings.Join(buf, "\n")); err != nil {
-		return errors.Wrap(err, "write failed")
-	}
-
-	w.Flush()
 
 	return nil
 }

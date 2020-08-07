@@ -16,23 +16,29 @@ import (
 	"testing"
 )
 
-func TestQuery(t *testing.T) {
-	url := "https://android.googlesource.com"
-	user := ""
-	pass := ""
+const (
+	url     = "https://android.googlesource.com"
+	user    = ""
+	pass    = ""
+	project = "platform/build/soong"
+)
 
-	project := "platform/build/soong"
-	revision := "8cf3e5471db04da274965a8e5c0dc3d465f08c5f"
-
+func TestHead(t *testing.T) {
 	g := Gitiles{}
 
-	if _, err := g.Query(url, user, pass, project, revision); err != nil {
+	if _, err := g.Head(url, user, pass, project, "master"); err != nil {
+		t.Error("FAIL:", err)
+	}
+}
+
+func TestQuery(t *testing.T) {
+	g := Gitiles{}
+
+	if _, err := g.Query(url, user, pass, project, "8cf3e5471db04da274965a8e5c0dc3d465f08c5f"); err != nil {
 		t.Error("FAIL:", err)
 	}
 
-	revision = "invalid"
-
-	if _, err := g.Query(url, user, pass, project, revision); err == nil {
+	if _, err := g.Query(url, user, pass, project, "invalid"); err == nil {
 		t.Error("FAIL:", err)
 	}
 }
