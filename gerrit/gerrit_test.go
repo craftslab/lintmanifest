@@ -18,7 +18,7 @@ import (
 
 const (
 	Pass = ""
-	Url  = "https://android-review.googlesource.com/"
+	Url  = "https://android-review.googlesource.com"
 	User = ""
 )
 
@@ -34,7 +34,7 @@ func TestGet(t *testing.T) {
 		t.Error("FAIL:", err)
 	}
 
-	if _, err := g.Get(502075); err != nil {
+	if _, err := g.Get(1514894); err != nil {
 		t.Error("FAIL:", err)
 	}
 }
@@ -51,7 +51,7 @@ func TestQuery(t *testing.T) {
 		t.Error("FAIL:", err)
 	}
 
-	if _, err := g.Query("commit:b6356a0", 0); err != nil {
+	if _, err := g.Query("commit:ffbd673b27bd0f60008360e3b8cd34c85886a0a4", 0); err != nil {
 		t.Error("FAIL:", err)
 	}
 }

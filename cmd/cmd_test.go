@@ -65,22 +65,22 @@ func TestGerritQuery(t *testing.T) {
 	g := gerrit.Gerrit{
 		Option: "CURRENT_REVISION",
 		Pass:   "",
-		Url:    "http://10.67.16.29:8080",
+		Url:    "https://android-review.googlesource.com",
 		User:   "",
 	}
 
-	if _, err := gerritQuery(g, "b6356a0"); err != nil {
+	if _, err := gerritQuery(g, "1514894"); err != nil {
 		t.Error("FAIL")
 	}
 
 	g = gerrit.Gerrit{
 		Option: "CURRENT_REVISION",
 		Pass:   "",
-		Url:    "http://10.67.16.29:8080",
+		Url:    "https://android-review.googlesource.com",
 		User:   "",
 	}
 
-	if _, err := gerritQuery(g, "8cf3e5471db04da274965a8e5c0dc3d465f08c5f"); err != nil {
+	if _, err := gerritQuery(g, "ffbd673b27bd0f60008360e3b8cd34c85886a0a4"); err != nil {
 		t.Error("FAIL")
 	}
 }
