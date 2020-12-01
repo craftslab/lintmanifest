@@ -66,14 +66,15 @@ func (w Writer) writeJson() error {
 func (w Writer) writeTxt() error {
 	var buf []string
 
-	head := "TYPE,REPO,BRANCH,COMMIT,DETAILS"
+	head := "REPORTTYPE,REPONAME,REPOBRANCH,HEADDATE,HEADHASH,HEADURL,COMMITDATE,COMMITHASH,COMMITURL,REPORTDETAILS"
 	buf = append(buf, head)
 
 	for _, val := range w.data {
 		if val != nil {
 			v := val.(map[string]string)
-			buf = append(buf, v["type"]+","+v["repo"]+","+v["branch"]+","+
-				v["commit"]+",'"+v["details"]+"'")
+			buf = append(buf, v["reportType"]+","+v["repoName"]+","+v["repoBranch"]+
+				v["headDate"]+","+v["headHash"]+","+v["headUrl"]+","+
+				v["commitDate"]+","+v["commitHash"]+","+v["commitUrl"]+",'"+v["reportDetails"]+"'")
 		}
 	}
 
@@ -81,24 +82,33 @@ func (w Writer) writeTxt() error {
 	if err != nil {
 		return errors.Wrap(err, "create failed")
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	b := bufio.NewWriter(f)
 	if _, err := b.WriteString(strings.Join(buf, "\n")); err != nil {
 		return errors.Wrap(err, "write failed")
 	}
-	b.Flush()
+	defer func() {
+		_ = b.Flush()
+	}()
 
 	return nil
 }
 
 func (w Writer) writeXlsx() error {
 	type R struct {
-		Type    string
-		Repo    string
-		Branch  string
-		Commit  string
-		Details string
+		ReportType    string
+		RepoName      string
+		RepoBranch    string
+		HeadDate      string
+		HeadHash      string
+		HeadUrl       string
+		CommitDate    string
+		CommitHash    string
+		CommitUrl     string
+		ReportDetails string
 	}
 
 	wb := xlsx.NewFile()
@@ -109,11 +119,16 @@ func (w Writer) writeXlsx() error {
 	}
 
 	r := R{
-		"TYPE",
-		"REPO",
-		"BRANCH",
-		"COMMIT",
-		"DETAILS",
+		"REPORTTYPE",
+		"REPONAME",
+		"REPOBRANCH",
+		"HEADDATE",
+		"HEADHASH",
+		"HEADURL",
+		"COMMITDATE",
+		"COMMITHASH",
+		"COMMITURL",
+		"REPORTDETAILS",
 	}
 	row := sh.AddRow()
 	row.WriteStruct(&r, -1)
@@ -122,11 +137,16 @@ func (w Writer) writeXlsx() error {
 		if val != nil {
 			v := val.(map[string]string)
 			r := R{
-				v["type"],
-				v["repo"],
-				v["branch"],
-				v["commit"],
-				v["details"],
+				v["reportType"],
+				v["repoName"],
+				v["repoBranch"],
+				v["headDate"],
+				v["headHash"],
+				v["headUrl"],
+				v["commitDate"],
+				v["commitHash"],
+				v["commitUrl"],
+				v["reportDetails"],
 			}
 			row := sh.AddRow()
 			row.WriteStruct(&r, -1)

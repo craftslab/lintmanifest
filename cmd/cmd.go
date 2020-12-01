@@ -13,40 +13,58 @@
 package cmd
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"lintmanifest/gitiles"
-	"lintmanifest/manifest"
-	"lintmanifest/runtime"
-	"lintmanifest/writer"
+	"github.com/craftslab/lintmanifest/config"
+	"github.com/craftslab/lintmanifest/gerrit"
+	"github.com/craftslab/lintmanifest/gitiles"
+	"github.com/craftslab/lintmanifest/manifest"
+	"github.com/craftslab/lintmanifest/runtime"
+	"github.com/craftslab/lintmanifest/writer"
 )
 
 var (
-	app  = kingpin.New("lintmanifest", "Lint Manifest").Author(Author).Version(Version)
-	pass = app.Flag("gitiles-pass", "Gitiles password").String()
-	url  = app.Flag("gitiles-url", "Gitiles location").Required().String()
-	user = app.Flag("gitiles-user", "Gitiles username").String()
-	mode = app.Flag("lint-mode", "Lint mode (async|sync)").Default("sync").String()
-	out  = app.Flag("lint-out", "Lint output (.json|.txt|.xlsx)").Default("out.txt").String()
-	file = app.Flag("manifest-file", "Manifest file").Required().String()
+	app          = kingpin.New("lintmanifest", "Lint Manifest").Version(config.Version + "-build-" + config.Build)
+	configFile   = app.Flag("config-file", "Config file, format: .json").Required().String()
+	lintMode     = app.Flag("lint-mode", "Lint mode (async|sync)").Default("sync").String()
+	lintOut      = app.Flag("lint-out", "Lint output (.json|.txt|.xlsx)").Default("out.json").String()
+	manifestFile = app.Flag("manifest-file", "Manifest file").Required().String()
+)
+
+var (
+	cfg = config.Config{}
+)
+
+var (
+	localLayout  = "2006-01-02 15:04:05"
+	serverLayout = "Mon Jan _2 15:04:05 2006 -0700"
 )
 
 func Run() {
+	var err error
 	var result []interface{}
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	if _, err := os.Stat(*out); err == nil {
-		log.Fatal("file exist: ", *out)
+	cfg, err = parseConfig(*configFile)
+	if err != nil {
+		log.Fatal("parse failed: ", err.Error())
+	}
+
+	if _, err = os.Stat(*lintOut); err == nil {
+		log.Fatal("file exist: ", *lintOut)
 	}
 
 	m := manifest.Manifest{}
 
-	if err := m.Load(*file); err != nil {
+	if err = m.Load(*manifestFile); err != nil {
 		log.Fatal("load failed: ", err.Error())
 	}
 
@@ -57,13 +75,13 @@ func Run() {
 
 	log.Println("lint running...")
 
-	if *mode == "async" {
-		result, err = LintAsync(projects)
+	if *lintMode == "async" {
+		result, err = lintAsync(projects)
 		if err != nil {
 			log.Fatal("async failed: ", err.Error())
 		}
-	} else if *mode == "sync" {
-		result, err = LintSync(projects)
+	} else if *lintMode == "sync" {
+		result, err = lintSync(projects)
 		if err != nil {
 			log.Fatal("sync failed: ", err.Error())
 		}
@@ -81,15 +99,35 @@ func Run() {
 
 	w := writer.Writer{}
 
-	if err := w.Run(result, *out); err != nil {
+	if err = w.Run(result, *lintOut); err != nil {
 		log.Fatal("run failed: ", err.Error())
 	}
 
 	log.Println("lint completed.")
 }
 
-func LintAsync(projects []interface{}) ([]interface{}, error) {
-	result, err := runtime.Run(Routine, projects)
+func parseConfig(name string) (config.Config, error) {
+	var c config.Config
+
+	fi, err := os.Open(name)
+	if err != nil {
+		return c, errors.Wrap(err, "open failed")
+	}
+
+	defer func() {
+		_ = fi.Close()
+	}()
+
+	buf, _ := ioutil.ReadAll(fi)
+	if err := json.Unmarshal(buf, &c); err != nil {
+		return c, errors.Wrap(err, "unmarshal failed")
+	}
+
+	return c, nil
+}
+
+func lintAsync(projects []interface{}) ([]interface{}, error) {
+	result, err := runtime.Run(routine, projects)
 	if err != nil {
 		return nil, errors.Wrap(err, "run failed")
 	}
@@ -97,11 +135,11 @@ func LintAsync(projects []interface{}) ([]interface{}, error) {
 	return result, nil
 }
 
-func LintSync(projects []interface{}) ([]interface{}, error) {
+func lintSync(projects []interface{}) ([]interface{}, error) {
 	var result []interface{}
 
 	for _, val := range projects {
-		buf := Routine(val)
+		buf := routine(val)
 		if buf != nil {
 			result = append(result, buf)
 		}
@@ -110,7 +148,7 @@ func LintSync(projects []interface{}) ([]interface{}, error) {
 	return result, nil
 }
 
-func Routine(project interface{}) interface{} {
+func routine(project interface{}) interface{} {
 	p := project.(map[string]interface{})
 
 	name, ok := p["-name"]
@@ -128,33 +166,132 @@ func Routine(project interface{}) interface{} {
 		return nil
 	}
 
-	buf := make(map[string]string)
-
-	buf["branch"] = upstream.(string)
-	buf["commit"] = revision.(string)
-	buf["details"] = ""
-	buf["repo"] = name.(string)
-	buf["type"] = ""
-
-	g := gitiles.Gitiles{}
-
-	_, err := g.Query(*url, *user, *pass, buf["repo"], buf["commit"])
-	if err != nil {
-		buf["details"] = "Commit is invalid in branch of repo."
-		buf["type"] = "ERROR"
-		return buf
+	ge := gerrit.Gerrit{
+		Option: cfg.GerritConfig.QueryConfig.Option,
+		Pass:   cfg.GerritConfig.Pass,
+		Url:    cfg.GerritConfig.Url,
+		User:   cfg.GerritConfig.User,
 	}
 
-	head, err := g.Head(*url, *user, *pass, buf["repo"], buf["branch"])
+	gi := gitiles.Gitiles{
+		Pass: cfg.GitilesConfig.Pass,
+		Url:  cfg.GitilesConfig.Url,
+		User: cfg.GitilesConfig.User,
+	}
+
+	commitDate, err := gerritQuery(ge, revision.(string))
 	if err != nil {
 		return nil
 	}
 
-	if buf["commit"] != head {
-		buf["details"] = "Commit is not the head in branch of repo."
-		buf["type"] = "WARN"
+	if commitDate == "" {
+		commitDate, err = gitilesQuery(gi, name.(string), revision.(string))
+		if err != nil {
+			return nil
+		}
+	}
+
+	headDate, headHash, err := gitilesHead(gi, name.(string), upstream.(string))
+	if err != nil {
+		return nil
+	}
+
+	date, err := gerritQuery(ge, headHash)
+	if err != nil {
+		return nil
+	}
+
+	if date != "" {
+		headDate = date
+	}
+
+	buf := make(map[string]string)
+	buf["commitDate"] = commitDate
+	buf["commitHash"] = revision.(string)
+	buf["commitUrl"] = cfg.GitilesConfig.Url + "/" + name.(string) + "/+/" + revision.(string)
+	buf["headDate"] = headDate
+	buf["headHash"] = headHash
+	buf["headUrl"] = cfg.GitilesConfig.Url + "/" + name.(string) + "/+/" + headHash
+	buf["repoBranch"] = upstream.(string)
+	buf["repoName"] = name.(string)
+
+	_, err = gi.Query(name.(string), revision.(string))
+	if err != nil {
+		buf["reportDetails"] = "Invalid commit in repo branch."
+		buf["reportType"] = "ERROR"
+		return buf
+	}
+
+	if revision.(string) != headHash {
+		buf["reportDetails"] = "Commit not found as head of repo branch."
+		buf["reportType"] = "WARN"
 		return buf
 	}
 
 	return nil
+}
+
+func gerritQuery(g gerrit.Gerrit, commit string) (string, error) {
+	date := ""
+
+	if buf, err := g.Query("commit:"+commit, 0); err == nil {
+		d, _ := time.Parse(localLayout, buf["submitted"].(string))
+		date = d.Local().Format(localLayout)
+	}
+
+	return date, nil
+}
+
+func gitilesHead(g gitiles.Gitiles, project, branch string) (date, hash string, err error) {
+	buf, err := g.Head(project, branch)
+	if err != nil {
+		return "", "", errors.Wrap(err, "head failed")
+	}
+
+	if _, ok := buf["log"]; !ok {
+		return "", "", errors.New("log invalid")
+	}
+
+	b := buf["log"].([]interface{})
+	if len(b) == 0 {
+		return "", "", errors.New("list invalid")
+	}
+
+	if _, ok := b[0].(map[string]interface{})["commit"]; !ok {
+		return "", "", errors.New("commit invalid")
+	}
+
+	committer := b[0].(map[string]interface{})["committer"]
+
+	d, _ := time.Parse(serverLayout, committer.(map[string]interface{})["time"].(string))
+	date = d.Local().Format("2006-01-02 15:04:05")
+
+	hash = b[0].(map[string]interface{})["commit"].(string)
+
+	return date, hash, nil
+}
+
+func gitilesQuery(g gitiles.Gitiles, project, commit string) (string, error) {
+	buf, err := g.Query(project, commit)
+	if err != nil {
+		return "", errors.Wrap(err, "query failed")
+	}
+
+	if _, ok := buf["committer"]; !ok {
+		return "", errors.New("committer invalid")
+	}
+
+	committer := buf["committer"].(map[string]interface{})
+	if committer == nil {
+		return "", errors.New("committer invalid")
+	}
+
+	if _, ok := committer["time"]; !ok {
+		return "", errors.New("time invalid")
+	}
+
+	d, _ := time.Parse(serverLayout, committer["time"].(string))
+	date := d.Local().Format(localLayout)
+
+	return date, nil
 }

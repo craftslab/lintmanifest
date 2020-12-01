@@ -10,9 +10,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package config
 
-const (
-	Author  = "Jia Jia"
-	Version = "3.0.0"
+type Config struct {
+	GerritConfig  GerritConfig  `json:"gerrit"`
+	GitilesConfig GitilesConfig `json:"gitiles"`
+}
+
+type GerritConfig struct {
+	Pass        string      `json:"pass"`
+	QueryConfig QueryConfig `json:"query"`
+	Url         string      `json:"url"`
+	User        string      `json:"user"`
+}
+
+type GitilesConfig struct {
+	Pass string `json:"pass"`
+	Url  string `json:"url"`
+	User string `json:"user"`
+}
+
+type QueryConfig struct {
+	Option string `json:"option"`
+}
+
+var (
+	Build   string
+	Version string
 )

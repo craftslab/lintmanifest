@@ -94,5 +94,4 @@ linters:
 
 run:
   skip-dirs:
-    - config
     - script

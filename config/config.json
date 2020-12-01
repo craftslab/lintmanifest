@@ -1,0 +1,15 @@
+{
+  "gerrit": {
+    "pass": "",
+    "query": {
+      "option": "CURRENT_REVISION"
+    },
+    "url": "http://127.0.0.1:80",
+    "user": ""
+  },
+  "gitiles": {
+    "pass": "",
+    "url": "http://127.0.0.1:80/a/plugins/gitiles",
+    "user": ""
+  }
+}

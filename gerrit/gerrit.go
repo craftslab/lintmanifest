@@ -10,24 +10,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitiles
+package gerrit
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
 
-type Gitiles struct {
-	Pass string
-	Url  string
-	User string
+type Gerrit struct {
+	Option string
+	Pass   string
+	Url    string
+	User   string
 }
 
-func (g *Gitiles) Head(project, branch string) (map[string]interface{}, error) {
-	req, err := http.NewRequest(http.MethodGet, g.Url+"/"+project+"/+log/refs/heads/"+branch+"?format=JSON", nil)
+func (g Gerrit) Get(id int) (map[string]interface{}, error) {
+	_url := g.Url + "/changes/" + strconv.Itoa(id) + "/detail"
+	if g.User != "" && g.Pass != "" {
+		_url = g.Url + "/a/changes/" + strconv.Itoa(id) + "/detail"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, _url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
@@ -63,8 +70,13 @@ func (g *Gitiles) Head(project, branch string) (map[string]interface{}, error) {
 	return buf, nil
 }
 
-func (g *Gitiles) Query(project, revision string) (map[string]interface{}, error) {
-	req, err := http.NewRequest(http.MethodGet, g.Url+"/"+project+"/+/"+revision+"?format=JSON", nil)
+func (g Gerrit) Query(search string, start int) (map[string]interface{}, error) {
+	_url := g.Url + "/changes/"
+	if g.User != "" && g.Pass != "" {
+		_url = g.Url + "/a/changes/"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, _url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "request failed")
 	}
@@ -72,6 +84,12 @@ func (g *Gitiles) Query(project, revision string) (map[string]interface{}, error
 	if g.User != "" && g.Pass != "" {
 		req.SetBasicAuth(g.User, g.Pass)
 	}
+
+	q := req.URL.Query()
+	q.Add("o", g.Option)
+	q.Add("q", search)
+	q.Add("start", strconv.Itoa(start))
+	req.URL.RawQuery = q.Encode()
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -91,11 +109,15 @@ func (g *Gitiles) Query(project, revision string) (map[string]interface{}, error
 		return nil, errors.Wrap(err, "read failed")
 	}
 
-	buf := map[string]interface{}{}
+	buf := []map[string]interface{}{}
 
 	if err := json.Unmarshal(data[4:], &buf); err != nil {
 		return nil, errors.Wrap(err, "unmarshal failed")
 	}
 
-	return buf, nil
+	if len(buf) == 0 {
+		return nil, errors.New("search not matched")
+	}
+
+	return buf[0], nil
 }

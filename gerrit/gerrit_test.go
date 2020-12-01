@@ -10,43 +10,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gitiles
+package gerrit
 
 import (
 	"testing"
 )
 
 const (
-	Pass    = ""
-	Project = "platform/build/soong"
-	Url     = "https://android.googlesource.com"
-	User    = ""
+	Pass = ""
+	Url  = "https://android-review.googlesource.com/"
+	User = ""
 )
 
-func TestHead(t *testing.T) {
-	g := Gitiles{
-		Pass: Pass,
-		Url:  Url,
-		User: User,
+func TestGet(t *testing.T) {
+	g := Gerrit{
+		Option: "CURRENT_REVISION",
+		Pass:   Pass,
+		Url:    Url,
+		User:   User,
 	}
 
-	if _, err := g.Head(Project, "master"); err != nil {
+	if _, err := g.Get(-1); err == nil {
+		t.Error("FAIL:", err)
+	}
+
+	if _, err := g.Get(502075); err != nil {
 		t.Error("FAIL:", err)
 	}
 }
 
 func TestQuery(t *testing.T) {
-	g := Gitiles{
-		Pass: Pass,
-		Url:  Url,
-		User: User,
+	g := Gerrit{
+		Option: "CURRENT_REVISION",
+		Pass:   Pass,
+		Url:    Url,
+		User:   User,
 	}
 
-	if _, err := g.Query(Project, "8cf3e5471db04da274965a8e5c0dc3d465f08c5f"); err != nil {
+	if _, err := g.Query("commit:-1", 0); err == nil {
 		t.Error("FAIL:", err)
 	}
 
-	if _, err := g.Query(Project, "invalid"); err == nil {
+	if _, err := g.Query("commit:b6356a0", 0); err != nil {
 		t.Error("FAIL:", err)
 	}
 }

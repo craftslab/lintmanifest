@@ -19,11 +19,16 @@ import (
 
 var (
 	content = map[string]string{
-		"branch":  "master",
-		"commit":  "d297a0797d1c0955ceb923ca38ce0dfb13236337",
-		"details": "Details",
-		"repo":    "example",
-		"type":    "ERROR",
+		"reportType":    "ERROR",
+		"repoName":      "project",
+		"repoBranch":    "master",
+		"headDate":      "2020-01-01 00:00:00",
+		"headHash":      "8cf3e5471db04da274965a8e5c0dc3d465f08c5f",
+		"headUrl":       "http://127.0.0.1",
+		"commitDate":    "2020-01-01 00:00:00",
+		"commitHash":    "8cf3e5471db04da274965a8e5c0dc3d465f08c5f",
+		"commitUrl":     "http://127.0.0.1",
+		"reportDetails": "details",
 	}
 )
 

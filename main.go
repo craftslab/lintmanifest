@@ -15,7 +15,7 @@ package main
 import (
 	"os"
 
-	"lintmanifest/cmd"
+	"github.com/craftslab/lintmanifest/cmd"
 )
 
 func main() {
