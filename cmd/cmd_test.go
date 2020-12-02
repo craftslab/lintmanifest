@@ -69,7 +69,7 @@ func TestGerritQuery(t *testing.T) {
 		User:   "",
 	}
 
-	if _, err := gerritQuery(g, "1514894"); err != nil {
+	if _, _, err := gerritQuery(g, "1514894"); err != nil {
 		t.Error("FAIL")
 	}
 
@@ -80,7 +80,7 @@ func TestGerritQuery(t *testing.T) {
 		User:   "",
 	}
 
-	if _, err := gerritQuery(g, "ffbd673b27bd0f60008360e3b8cd34c85886a0a4"); err != nil {
+	if _, _, err := gerritQuery(g, "ffbd673b27bd0f60008360e3b8cd34c85886a0a4"); err != nil {
 		t.Error("FAIL")
 	}
 }
@@ -92,11 +92,11 @@ func TestGitilesHead(t *testing.T) {
 		User: "",
 	}
 
-	if _, _, err := gitilesHead(g, "platform/build/soong", "foo"); err == nil {
+	if _, _, _, err := gitilesHead(g, "platform/build/soong", "foo"); err == nil {
 		t.Error("FAIL")
 	}
 
-	if _, _, err := gitilesHead(g, "platform/build/soong", "master"); err != nil {
+	if _, _, _, err := gitilesHead(g, "platform/build/soong", "master"); err != nil {
 		t.Error("FAIL")
 	}
 }
@@ -108,11 +108,11 @@ func TestGitilesQuery(t *testing.T) {
 		User: "",
 	}
 
-	if _, err := gitilesQuery(g, "platform/build/soong", "foo"); err == nil {
+	if _, _, err := gitilesQuery(g, "platform/build/soong", "foo"); err == nil {
 		t.Error("FAIL")
 	}
 
-	if _, err := gitilesQuery(g, "platform/build/soong", "8cf3e5471db04da274965a8e5c0dc3d465f08c5f"); err != nil {
+	if _, _, err := gitilesQuery(g, "platform/build/soong", "8cf3e5471db04da274965a8e5c0dc3d465f08c5f"); err != nil {
 		t.Error("FAIL")
 	}
 }

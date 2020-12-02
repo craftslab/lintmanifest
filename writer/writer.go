@@ -66,15 +66,20 @@ func (w Writer) writeJson() error {
 func (w Writer) writeTxt() error {
 	var buf []string
 
-	head := "REPORTTYPE,REPONAME,REPOBRANCH,HEADDATE,HEADHASH,HEADURL,COMMITDATE,COMMITHASH,COMMITURL,REPORTDETAILS"
+	head := "REPORTTYPE,REPONAME,REPOBRANCH," +
+		"HEADREMOTEDATE,HEADLOCALDATE,HEADHASH,HEADURL," +
+		"COMMITREMOTEDATE,COMMITLOCALDATE,COMMITHASH,COMMITURL," +
+		"REPORTDETAILS"
+
 	buf = append(buf, head)
 
 	for _, val := range w.data {
 		if val != nil {
 			v := val.(map[string]string)
 			buf = append(buf, v["reportType"]+","+v["repoName"]+","+v["repoBranch"]+
-				v["headDate"]+","+v["headHash"]+","+v["headUrl"]+","+
-				v["commitDate"]+","+v["commitHash"]+","+v["commitUrl"]+",'"+v["reportDetails"]+"'")
+				v["headRemoteDate"]+","+v["headLocalDate"]+","+v["headHash"]+","+v["headUrl"]+","+
+				v["commitRemoteDate"]+","+v["commitLocalDate"]+","+v["commitHash"]+","+v["commitUrl"]+
+				",'"+v["reportDetails"]+"'")
 		}
 	}
 
@@ -99,16 +104,18 @@ func (w Writer) writeTxt() error {
 
 func (w Writer) writeXlsx() error {
 	type R struct {
-		ReportType    string
-		RepoName      string
-		RepoBranch    string
-		HeadDate      string
-		HeadHash      string
-		HeadUrl       string
-		CommitDate    string
-		CommitHash    string
-		CommitUrl     string
-		ReportDetails string
+		ReportType       string
+		RepoName         string
+		RepoBranch       string
+		HeadRemoteDate   string
+		HeadLocalDate    string
+		HeadHash         string
+		HeadUrl          string
+		CommitRemoteDate string
+		CommitLocalDate  string
+		CommitHash       string
+		CommitUrl        string
+		ReportDetails    string
 	}
 
 	wb := xlsx.NewFile()
@@ -122,10 +129,12 @@ func (w Writer) writeXlsx() error {
 		"REPORTTYPE",
 		"REPONAME",
 		"REPOBRANCH",
-		"HEADDATE",
+		"HEADREMOTEDATE",
+		"HEADLOCALDATE",
 		"HEADHASH",
 		"HEADURL",
-		"COMMITDATE",
+		"COMMITREMOTEDATE",
+		"COMMITLOCALDATE",
 		"COMMITHASH",
 		"COMMITURL",
 		"REPORTDETAILS",
@@ -140,10 +149,12 @@ func (w Writer) writeXlsx() error {
 				v["reportType"],
 				v["repoName"],
 				v["repoBranch"],
-				v["headDate"],
+				v["headRemoteDate"],
+				v["headLocalDate"],
 				v["headHash"],
 				v["headUrl"],
-				v["commitDate"],
+				v["commitRemoteDate"],
+				v["commitLocalDate"],
 				v["commitHash"],
 				v["commitUrl"],
 				v["reportDetails"],

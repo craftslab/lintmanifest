@@ -44,7 +44,7 @@ var (
 
 var (
 	localLayout  = "2006-01-02 15:04:05"
-	serverLayout = "Mon Jan _2 15:04:05 2006 -0700"
+	remoteLayout = "Mon Jan _2 15:04:05 2006 -0700"
 )
 
 func Run() {
@@ -179,38 +179,41 @@ func routine(project interface{}) interface{} {
 		User: cfg.GitilesConfig.User,
 	}
 
-	commitDate, err := gerritQuery(ge, revision.(string))
+	commitLocalDate, commitRemoteDate, err := gerritQuery(ge, revision.(string))
 	if err != nil {
 		return nil
 	}
 
-	if commitDate == "" {
-		commitDate, err = gitilesQuery(gi, name.(string), revision.(string))
+	if commitLocalDate == "" || commitRemoteDate == "" {
+		commitLocalDate, commitRemoteDate, err = gitilesQuery(gi, name.(string), revision.(string))
 		if err != nil {
 			return nil
 		}
 	}
 
-	headDate, headHash, err := gitilesHead(gi, name.(string), upstream.(string))
+	headLocalDate, headRemoteDate, headHash, err := gitilesHead(gi, name.(string), upstream.(string))
 	if err != nil {
 		return nil
 	}
 
-	date, err := gerritQuery(ge, headHash)
+	localDate, remoteDate, err := gerritQuery(ge, headHash)
 	if err != nil {
 		return nil
 	}
 
-	if date != "" {
-		headDate = date
+	if localDate != "" && remoteDate != "" {
+		headLocalDate = localDate
+		headRemoteDate = remoteDate
 	}
 
 	buf := make(map[string]string)
-	buf["commitDate"] = commitDate
+	buf["commitLocalDate"] = commitLocalDate
 	buf["commitHash"] = revision.(string)
+	buf["commitRemoteDate"] = commitRemoteDate
 	buf["commitUrl"] = cfg.GitilesConfig.Url + "/" + name.(string) + "/+/" + revision.(string)
-	buf["headDate"] = headDate
+	buf["headLocalDate"] = headLocalDate
 	buf["headHash"] = headHash
+	buf["headRemoteDate"] = headRemoteDate
 	buf["headUrl"] = cfg.GitilesConfig.Url + "/" + name.(string) + "/+/" + headHash
 	buf["repoBranch"] = upstream.(string)
 	buf["repoName"] = name.(string)
@@ -231,67 +234,73 @@ func routine(project interface{}) interface{} {
 	return nil
 }
 
-func gerritQuery(g gerrit.Gerrit, commit string) (string, error) {
-	date := ""
+func gerritQuery(g gerrit.Gerrit, commit string) (localDate, remoteDate string, err error) {
+	localDate = ""
+	remoteDate = ""
 
 	if buf, err := g.Query("commit:"+commit, 0); err == nil {
 		d, _ := time.Parse(localLayout, buf["submitted"].(string))
-		date = d.Local().Format(localLayout)
+		localDate = d.Local().Format(localLayout)
+		remoteDate = buf["submitted"].(string)
 	}
 
-	return date, nil
+	return localDate, remoteDate, nil
 }
 
-func gitilesHead(g gitiles.Gitiles, project, branch string) (date, hash string, err error) {
+func gitilesHead(g gitiles.Gitiles, project, branch string) (localDate, remoteDate, hash string, err error) {
 	buf, err := g.Head(project, branch)
 	if err != nil {
-		return "", "", errors.Wrap(err, "head failed")
+		return "", "", "", errors.Wrap(err, "head failed")
 	}
 
 	if _, ok := buf["log"]; !ok {
-		return "", "", errors.New("log invalid")
+		return "", "", "", errors.New("log invalid")
 	}
 
 	b := buf["log"].([]interface{})
 	if len(b) == 0 {
-		return "", "", errors.New("list invalid")
+		return "", "", "", errors.New("list invalid")
 	}
 
 	if _, ok := b[0].(map[string]interface{})["commit"]; !ok {
-		return "", "", errors.New("commit invalid")
+		return "", "", "", errors.New("commit invalid")
 	}
 
 	committer := b[0].(map[string]interface{})["committer"]
 
-	d, _ := time.Parse(serverLayout, committer.(map[string]interface{})["time"].(string))
-	date = d.Local().Format("2006-01-02 15:04:05")
+	d, _ := time.Parse(remoteLayout, committer.(map[string]interface{})["time"].(string))
+	localDate = d.Local().Format("2006-01-02 15:04:05")
+
+	remoteDate = committer.(map[string]interface{})["time"].(string)
 
 	hash = b[0].(map[string]interface{})["commit"].(string)
 
-	return date, hash, nil
+	return localDate, remoteDate, hash, nil
 }
 
-func gitilesQuery(g gitiles.Gitiles, project, commit string) (string, error) {
+func gitilesQuery(g gitiles.Gitiles, project, commit string) (localDate, remoteDate string, err error) {
 	buf, err := g.Query(project, commit)
 	if err != nil {
-		return "", errors.Wrap(err, "query failed")
+		return "", "", errors.Wrap(err, "query failed")
 	}
 
 	if _, ok := buf["committer"]; !ok {
-		return "", errors.New("committer invalid")
+		return "", "", errors.New("committer invalid")
 	}
 
 	committer := buf["committer"].(map[string]interface{})
 	if committer == nil {
-		return "", errors.New("committer invalid")
+		return "", "", errors.New("committer invalid")
 	}
 
 	if _, ok := committer["time"]; !ok {
-		return "", errors.New("time invalid")
+		return "", "", errors.New("time invalid")
 	}
 
-	d, _ := time.Parse(serverLayout, committer["time"].(string))
-	date := d.Local().Format(localLayout)
+	d, _ := time.Parse(remoteLayout, committer["time"].(string))
+	localDate = d.Local().Format(localLayout)
 
-	return date, nil
+	remoteDate = committer["time"].(string)
+
+	return localDate, remoteDate, nil
 }

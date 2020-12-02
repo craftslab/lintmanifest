@@ -88,11 +88,13 @@ An example of configuration in [config.json](https://github.com/craftslab/lintma
 {
   "lintmanifest": [
     {
-      "commitDate": "DATE",
       "commitHash": "HASH",
+      "commitLocalDate": "DATE",
+      "commitRemoteDate": "DATE",
       "commitUrl": "URL",
-      "headDate": "DATE",
       "headHash": "HASH",
+      "headLocalDate": "DATE",
+      "headRemoteDate": "DATE",
       "headUrl": "URL",
       "repoBranch": "NAME",
       "repoName": "NAME",
@@ -108,7 +110,7 @@ An example of configuration in [config.json](https://github.com/craftslab/lintma
 ### Text
 
 ```txt
-REPONAME, REPOBRANCH, HEADHASH, HEADDATE, COMMITHASH, COMMITDATE, REPORTTYPE, REPORTDETAILS
+REPORTTYPE, REPONAME, REPOBRANCH, HEADREMOTEDATE, HEADLOCALDATE, HEADHASH, HEADURL, COMMITREMOTEDATE, COMMITLOCALDATE, COMMITHASH, COMMITURL, REPORTDETAILS
 ```
 
 
@@ -116,7 +118,7 @@ REPONAME, REPOBRANCH, HEADHASH, HEADDATE, COMMITHASH, COMMITDATE, REPORTTYPE, RE
 ### Excel
 
 ```xlsx
-REPONAME, REPOBRANCH, HEADHASH, HEADDATE, COMMITHASH, COMMITDATE, REPORTTYPE, REPORTDETAILS
+REPORTTYPE, REPONAME, REPOBRANCH, HEADREMOTEDATE, HEADLOCALDATE, HEADHASH, HEADURL, COMMITREMOTEDATE, COMMITLOCALDATE, COMMITHASH, COMMITURL, REPORTDETAILS
 ```
 
 
