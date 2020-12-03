@@ -51,5 +51,9 @@ func (m Manifest) Projects() ([]interface{}, error) {
 
 	buf := m.manifest[0]["manifest"].(map[string]interface{})["project"]
 
+	if b, ok := buf.(map[string]interface{}); ok {
+		return []interface{}{b}, nil
+	}
+
 	return buf.([]interface{}), nil
 }
