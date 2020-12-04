@@ -28,6 +28,25 @@
 
 
 
+## Build
+
+```bash
+git clone https://github.com/craftslab/lintmanifest.git
+
+cd lintmanifest
+make build
+```
+
+
+
+## Run
+
+```bash
+./lintmanifest --config-file=config.json --lint-mode="sync" --lint-out=out.json --manifest-file=Manifest.xml
+```
+
+
+
 ## Usage
 
 ```bash
@@ -42,14 +61,6 @@ Flags:
   --lint-mode="sync"             Lint mode (async|sync)
   --lint-out="out.json"          Lint output (.json|.txt|.xlsx)
   --manifest-file=MANIFEST-FILE  Manifest file
-```
-
-
-
-## Run
-
-```bash
-./lintmanifest --config-file=config.json --lint-mode="sync" --lint-out=out.json --manifest-file=Manifest.xml
 ```
 
 
