@@ -19,7 +19,7 @@ import (
 func TestLoad(t *testing.T) {
 	m := Manifest{}
 
-	if err := m.Load("../test/manifest.xml"); err != nil {
+	if err := m.Load("../test/manifest1.xml"); err != nil {
 		t.Error("FAIL:", err)
 	}
 }
@@ -27,7 +27,15 @@ func TestLoad(t *testing.T) {
 func TestProjects(t *testing.T) {
 	m := Manifest{}
 
-	if err := m.Load("../test/manifest.xml"); err != nil {
+	if err := m.Load("../test/manifest1.xml"); err != nil {
+		t.Error("FAIL:", err)
+	}
+
+	if _, err := m.Projects(); err != nil {
+		t.Error("FAIL:", err)
+	}
+
+	if err := m.Load("../test/manifest2.xml"); err != nil {
 		t.Error("FAIL:", err)
 	}
 
