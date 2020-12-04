@@ -57,7 +57,7 @@ Lint Manifest
 Flags:
   --help                         Show context-sensitive help (also try --help-long and --help-man).
   --version                      Show application version.
-  --config-file=CONFIG-FILE      Config file, format: .json
+  --config-file=CONFIG-FILE      Config file (.json)
   --lint-mode="sync"             Lint mode (async|sync)
   --lint-out="out.json"          Lint output (.json|.txt|.xlsx)
   --manifest-file=MANIFEST-FILE  Manifest file

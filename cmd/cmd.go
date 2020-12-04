@@ -32,7 +32,7 @@ import (
 
 var (
 	app          = kingpin.New("lintmanifest", "Lint Manifest").Version(config.Version + "-build-" + config.Build)
-	configFile   = app.Flag("config-file", "Config file, format: .json").Required().String()
+	configFile   = app.Flag("config-file", "Config file (.json)").Required().String()
 	lintMode     = app.Flag("lint-mode", "Lint mode (async|sync)").Default("sync").String()
 	lintOut      = app.Flag("lint-out", "Lint output (.json|.txt|.xlsx)").Default("out.json").String()
 	manifestFile = app.Flag("manifest-file", "Manifest file").Required().String()
